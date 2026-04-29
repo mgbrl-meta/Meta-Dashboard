@@ -11,5 +11,10 @@ export async function GET() {
 
   const [rows] = await bigquery.query({ query });
 
-  return NextResponse.json(rows);
+  const cleanRows = rows.map((row: any) => ({
+  ...row,
+  date: row.date?.value || row.date,
+  }));
+
+  return NextResponse.json(cleanRows);
 }
