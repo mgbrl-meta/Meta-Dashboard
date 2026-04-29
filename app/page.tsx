@@ -18,9 +18,13 @@ export default function Dashboard() {
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
   const [compareStartDate, setCompareStartDate] = useState("");
   const [compareEndDate, setCompareEndDate] = useState("");
+
+  const [draftStartDate, setDraftStartDate] = useState("");
+  const [draftEndDate, setDraftEndDate] = useState("");
+  const [draftCompareStartDate, setDraftCompareStartDate] = useState("");
+  const [draftCompareEndDate, setDraftCompareEndDate] = useState("");
 
   useEffect(() => {
     fetch("/api/ceo-summary")
@@ -28,20 +32,21 @@ export default function Dashboard() {
       .then((rows) => {
         setData(rows);
 
-        if (rows.length > 0) {
-          const sorted = [...rows].reverse();
-          const latest = sorted[sorted.length - 1]?.date;
-          const start = sorted[Math.max(sorted.length - 30, 0)]?.date;
+        const sorted = [...rows].reverse();
+        const latest = normalizeDate(sorted[sorted.length - 1]?.date);
+        const start = normalizeDate(sorted[Math.max(sorted.length - 30, 0)]?.date);
+        const compareEnd = normalizeDate(sorted[Math.max(sorted.length - 31, 0)]?.date);
+        const compareStart = normalizeDate(sorted[Math.max(sorted.length - 60, 0)]?.date);
 
-          setStartDate(start);
-          setEndDate(latest);
+        setStartDate(start);
+        setEndDate(latest);
+        setCompareStartDate(compareStart);
+        setCompareEndDate(compareEnd);
 
-          const compareEnd = sorted[Math.max(sorted.length - 31, 0)]?.date;
-          const compareStart = sorted[Math.max(sorted.length - 60, 0)]?.date;
-
-          setCompareStartDate(compareStart);
-          setCompareEndDate(compareEnd);
-        }
+        setDraftStartDate(start);
+        setDraftEndDate(latest);
+        setDraftCompareStartDate(compareStart);
+        setDraftCompareEndDate(compareEnd);
       });
   }, []);
 
@@ -55,8 +60,33 @@ export default function Dashboard() {
 
   const current = getSummary(filteredRows);
   const compare = getSummary(compareRows);
-
   const latest = filteredRows[filteredRows.length - 1];
+
+  function applyFilters() {
+    setStartDate(draftStartDate);
+    setEndDate(draftEndDate);
+    setCompareStartDate(draftCompareStartDate);
+    setCompareEndDate(draftCompareEndDate);
+  }
+
+  function resetToLast30() {
+    const sorted = [...data].reverse();
+
+    const latestDate = normalizeDate(sorted[sorted.length - 1]?.date);
+    const start = normalizeDate(sorted[Math.max(sorted.length - 30, 0)]?.date);
+    const compareEnd = normalizeDate(sorted[Math.max(sorted.length - 31, 0)]?.date);
+    const compareStart = normalizeDate(sorted[Math.max(sorted.length - 60, 0)]?.date);
+
+    setDraftStartDate(start);
+    setDraftEndDate(latestDate);
+    setDraftCompareStartDate(compareStart);
+    setDraftCompareEndDate(compareEnd);
+
+    setStartDate(start);
+    setEndDate(latestDate);
+    setCompareStartDate(compareStart);
+    setCompareEndDate(compareEnd);
+  }
 
   if (!latest) {
     return <main className="p-8">Loading GrowthOS...</main>;
@@ -93,60 +123,52 @@ export default function Dashboard() {
         <h2 className="text-lg font-bold mb-4">Date Filters</h2>
 
         <div className="grid grid-cols-4 gap-4 mb-4">
-          <DateInput label="Start Date" value={startDate} onChange={setStartDate} />
-          <DateInput label="End Date" value={endDate} onChange={setEndDate} />
+          <DateInput label="Start Date" value={draftStartDate} onChange={setDraftStartDate} />
+          <DateInput label="End Date" value={draftEndDate} onChange={setDraftEndDate} />
           <DateInput
             label="Compare Start Date"
-            value={compareStartDate}
-            onChange={setCompareStartDate}
+            value={draftCompareStartDate}
+            onChange={setDraftCompareStartDate}
           />
           <DateInput
             label="Compare End Date"
-            value={compareEndDate}
-            onChange={setCompareEndDate}
+            value={draftCompareEndDate}
+            onChange={setDraftCompareEndDate}
           />
         </div>
 
         <div className="flex gap-3">
-          <QuickButton
-            label="Last 7 Days"
-            onClick={() => applyQuickRange(data, 7, setStartDate, setEndDate)}
-          />
-          <QuickButton
-            label="Last 30 Days"
-            onClick={() => applyQuickRange(data, 30, setStartDate, setEndDate)}
-          />
-          <QuickButton
-            label="Last 60 Days"
-            onClick={() => applyQuickRange(data, 60, setStartDate, setEndDate)}
-          />
+          <button
+            onClick={applyFilters}
+            className="rounded-xl bg-black px-5 py-2 text-sm text-white"
+          >
+            Apply Filters
+          </button>
+
+          <button
+            onClick={resetToLast30}
+            className="rounded-xl border bg-gray-100 px-5 py-2 text-sm hover:bg-gray-200"
+          >
+            Reset L30
+          </button>
         </div>
       </div>
 
       {activeTab === "ceo" && (
-        <CeoSummary
-          rows={filteredRows}
-          latest={latest}
-          current={current}
-          compare={compare}
-        />
+        <CeoSummary rows={filteredRows} current={current} compare={compare} />
       )}
 
       {activeTab !== "ceo" && (
         <div className="rounded-2xl bg-white p-8 border shadow-sm">
-          <h2 className="text-xl font-bold mb-2">
-            {activeTab.toUpperCase()} coming next
-          </h2>
-          <p className="text-gray-500">
-            This tab is reserved for the next GrowthOS module.
-          </p>
+          <h2 className="text-xl font-bold mb-2">{activeTab.toUpperCase()} coming next</h2>
+          <p className="text-gray-500">This tab is reserved for the next GrowthOS module.</p>
         </div>
       )}
     </main>
   );
 }
 
-function CeoSummary({ rows, latest, current, compare }: any) {
+function CeoSummary({ rows, current, compare }: any) {
   const channelData = [
     {
       channel: "Meta",
@@ -170,18 +192,8 @@ function CeoSummary({ rows, latest, current, compare }: any) {
     <>
       <Section title="1. North Star — 5 Second CEO View">
         <div className="grid grid-cols-5 gap-4">
-          <Card
-            title="Revenue"
-            value={current.revenue}
-            compareValue={compare.revenue}
-            prefix="₹"
-          />
-          <Card
-            title="Total Spend"
-            value={current.spend}
-            compareValue={compare.spend}
-            prefix="₹"
-          />
+          <Card title="Revenue" value={current.revenue} compareValue={compare.revenue} prefix="₹" />
+          <Card title="Total Spend" value={current.spend} compareValue={compare.spend} prefix="₹" />
           <Card
             title="Contribution After Ads"
             value={current.revenue - current.spend}
@@ -206,7 +218,6 @@ function CeoSummary({ rows, latest, current, compare }: any) {
         <div className="grid grid-cols-2 gap-6">
           <div className="rounded-2xl bg-white p-5 border shadow-sm">
             <h3 className="font-semibold mb-4">Channel Split</h3>
-
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-500 border-b">
@@ -340,17 +351,6 @@ function DateInput({ label, value, onChange }: any) {
   );
 }
 
-function QuickButton({ label, onClick }: any) {
-  return (
-    <button
-      onClick={onClick}
-      className="rounded-xl border bg-gray-100 px-4 py-2 text-sm hover:bg-gray-200"
-    >
-      {label}
-    </button>
-  );
-}
-
 function Section({ title, children }: any) {
   return (
     <section className="mb-10">
@@ -363,9 +363,7 @@ function Section({ title, children }: any) {
 function Card({ title, value, compareValue, prefix = "", suffix = "" }: any) {
   const change =
     compareValue !== undefined && Number(compareValue) !== 0
-      ? ((Number(value || 0) - Number(compareValue || 0)) /
-          Number(compareValue || 0)) *
-        100
+      ? ((Number(value || 0) - Number(compareValue || 0)) / Number(compareValue || 0)) * 100
       : null;
 
   return (
@@ -410,20 +408,6 @@ function normalizeDate(date: any) {
   if (typeof date === "string") return date.slice(0, 10);
   if (date.value) return date.value.slice(0, 10);
   return "";
-}
-
-function applyQuickRange(
-  data: any[],
-  days: number,
-  setStartDate: any,
-  setEndDate: any
-) {
-  const sorted = [...data].reverse();
-  const end = sorted[sorted.length - 1]?.date;
-  const start = sorted[Math.max(sorted.length - days, 0)]?.date;
-
-  setStartDate(normalizeDate(start));
-  setEndDate(normalizeDate(end));
 }
 
 function getSummary(rows: any[]) {
