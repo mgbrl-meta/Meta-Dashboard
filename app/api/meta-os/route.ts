@@ -235,27 +235,18 @@ export async function GET(req: Request) {
       const row: any = rows[0];
 
       return Response.json({
-        current: JSON.parse(row.current_data),
-        compare: JSON.parse(row.compare_data),
+      current: JSON.parse(row.current_data),
+      compare: JSON.parse(row.compare_data),
       });
     }
 
     return Response.json(rows);
-
-  } catch (err: any) {
-    return Response.json({
-      error: err.message,
-    });
+  }catch (err: any) {
+    return Response.json(
+      {
+        error: err.message,
+      },
+      { status: 500 }
+    );
   }
-
-  if (tab === "overview" || tab === "funnel") {
-    const row: any = rows[0];
-
-    return Response.json({
-      current: JSON.parse(row.current_data),
-      compare: JSON.parse(row.compare_data),
-    });
-  }
-
-  return Response.json(rows);
 }
