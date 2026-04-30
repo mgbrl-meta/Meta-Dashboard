@@ -225,7 +225,6 @@ export default function Dashboard() {
       <header className="sticky top-0 z-20 mb-6 flex items-center justify-between border-b border-slate-200/80 bg-slate-50/80 py-5 backdrop-blur-xl">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">GrowthOS</p>
-          <h1 className="mt-1 text-4xl font-black tracking-[-0.05em]">CEO Command Center</h1>
           <p className="mt-1 text-slate-500">Revenue, spend, channel efficiency, customer quality and decision alerts.</p>
         </div>
         <div className="rounded-full border bg-white px-4 py-2 text-sm font-semibold shadow-sm">
