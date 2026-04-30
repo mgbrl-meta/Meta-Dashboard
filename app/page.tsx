@@ -67,7 +67,7 @@ export default function Dashboard() {
     if (preset === "yesterday") {
       const y = new Date(today);
       y.setDate(today.getDate() - 1);
-      
+
       currentStart = y;
       currentEnd = y;
     }
@@ -391,7 +391,9 @@ function MetaOS({ activeMetaTab, setActiveMetaTab, start, end, compareStart, com
         const json = await res.json();
         const names = Array.isArray(json) ? json.map((x: any) => x.campaign_name).filter(Boolean) : [];
         setCampaigns(names);
-        if (!selectedCampaign && names.length > 0) setSelectedCampaign(names[0]);
+        if (names.length > 0 && !names.includes(selectedCampaign)) {
+          setSelectedCampaign(names[0]);
+        }
       } catch (e) {
         console.error('Campaign list error', e);
       }
