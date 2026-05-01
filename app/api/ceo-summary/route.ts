@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
-import { bigquery } from "../../../lib/bigquery";
+import { bigquery } from "@/lib/bigquery";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
 
   const start = searchParams.get("start");
   const end = searchParams.get("end");
+
+  if (!start || !end) {
+    return NextResponse.json(
+      { error: "Missing start or end date" },
+      { status: 400 }
+    );
+  }
 
   const query = `
     SELECT *
