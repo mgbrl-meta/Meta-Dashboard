@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import GoogleOSSettings, {
-  defaultSettings,
-  GoogleOSSettingsState,
-} from "./components/GoogleOSSettings";
+import DateControl from './components/DateControl';
+import CeoSummary from './components/CeoSummary';
+import GoogleOS from './components/GoogleOS';
 
 type Row = any;
 type MetaParams = {
@@ -123,22 +122,6 @@ export default function Dashboard() {
   
   const [activeTab, setActiveTab] = useState('CEO Summary');
   const [activeMetaTab, setActiveMetaTab] = useState('Settings');
-  const [activeGoogleTab, setActiveGoogleTab] = useState('Settings');
-  const [googleSettings, setGoogleSettings] = 
-    useState<GoogleOSSettingsState>(defaultSettings);
-
-  const googleTabs = [
-    'Settings',
-    'Overview',
-    'Channel Mix',
-    'Campaign',
-    'Ad Group',
-    'Search Terms',
-    'Keywords',
-    'Funnel',
-    'Alerts',
-  ];
-
   const today = new Date();
 
   const format = (d: Date) => d.toISOString().split("T")[0];
@@ -343,15 +326,7 @@ export default function Dashboard() {
                 />
               )}
 
-              {activeTab === 'Google OS' && (
-                <GoogleOS
-                  activeGoogleTab={activeGoogleTab}
-                  setActiveGoogleTab={setActiveGoogleTab}
-                  googleTabs={googleTabs}
-                  googleSettings={googleSettings}
-                  setGoogleSettings={setGoogleSettings}
-                />
-              )}
+              {activeTab === 'Google OS' && <GoogleOS />}
 
               {activeTab !== 'CEO Summary' && activeTab !== 'Meta OS' && activeTab !== 'Google OS' && (
                 <section className="rounded-[2rem] border border-white/70 bg-white/90 p-10 shadow-2xl shadow-slate-200/70 backdrop-blur-xl">
@@ -376,162 +351,6 @@ function HeroPill({ label, value }: any) {
     </div>
   );
 }
-function DateControl({ start, end, compareStart, compareEnd, setStart, setEnd, setCompareStart, setCompareEnd, onApply, loading, setPreset, }: any) {
-  return (
-    <section className="mb-7 rounded-[2rem] border border-white/70 bg-white/95 p-5 shadow-2xl shadow-slate-900/10 backdrop-blur-xl md:p-6">
-      <div className="mb-5 flex items-end justify-between gap-6">
-        <div>
-          <h3 className="text-lg font-black tracking-tight">Date Control</h3>
-          <p className="text-sm text-slate-500">Primary period vs comparison period</p>
-        </div>
-        <button onClick={onApply} className="rounded-2xl bg-gradient-to-r from-slate-950 to-slate-800 px-7 py-3 text-sm font-black text-white shadow-xl shadow-slate-900/20 transition hover:-translate-y-0.5">
-          {loading ? 'Loading...' : 'Apply'}
-        </button>
-      </div>
-      <div className="flex flex-wrap gap-2 mb-5">
-        <button onClick={() => setPreset("yesterday")} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-700 hover:border-slate-950 hover:bg-slate-950 hover:text-white"
->         Yesterday
-        </button>
-        <button onClick={() => setPreset("l7")} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-700 hover:border-slate-950 hover:bg-slate-950 hover:text-white">
-          Last 7 Days
-        </button>
-        <button onClick={() => setPreset("l14")} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-700 hover:border-slate-950 hover:bg-slate-950 hover:text-white">
-          Last 14 Days
-        </button>
-        <button onClick={() => setPreset("l30")} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-700 hover:border-slate-950 hover:bg-slate-950 hover:text-white">
-          Last 30 Days
-        </button>
-        <button onClick={() => setPreset("mtd")} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-700 hover:border-slate-950 hover:bg-slate-950 hover:text-white">
-          This Month
-        </button>
-        <button onClick={() => setPreset("lastMonth")} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-700 hover:border-slate-950 hover:bg-slate-950 hover:text-white">
-          Last Month
-        </button>
-      </div>
-      <div className="grid grid-cols-4 gap-4">
-        <Field label="Start Date" value={start} setValue={setStart} />
-        <Field label="End Date" value={end} setValue={setEnd} />
-        <Field label="Compare Start" value={compareStart} setValue={setCompareStart} />
-        <Field label="Compare End" value={compareEnd} setValue={setCompareEnd} />
-      </div>
-    </section>
-  );
-}
-
-function CeoSummary({ metrics, data }: any) {
-  return (
-    <div className="space-y-6">
-      <section className="grid grid-cols-5 gap-4">
-        <MetricCard title="Revenue" value={formatCurrency(metrics.revenue)} delta={metrics.revenueDelta} goodUp />
-        <MetricCard title="Total Spend" value={formatCurrency(metrics.spend)} delta={metrics.spendDelta} />
-        <MetricCard title="Contribution After Ads" value={formatCurrency(metrics.contribution)} delta={metrics.revenueDelta - metrics.spendDelta} goodUp />
-        <MetricCard title="Blended ROAS" value={formatNumber(metrics.roas)} delta={metrics.roasDelta} goodUp />
-        <MetricCard title="New CAC" value={formatCurrency(metrics.newCac)} delta={metrics.newCacDelta} />
-      </section>
-
-      <section className="grid grid-cols-2 gap-5">
-        <Panel title="Channel Efficiency">
-          <ChannelRow name="Meta" spend={metrics.metaSpend} revenue={metrics.metaRevenue} total={metrics.spend} />
-          <ChannelRow name="Google" spend={metrics.googleSpend} revenue={metrics.googleRevenue} total={metrics.spend} />
-          <ChannelRow name="Organic / Direct" spend={0} revenue={metrics.organicRevenue} total={metrics.spend} />
-        </Panel>
-        <Panel title="Customer Economics">
-          <div className="grid grid-cols-2 gap-3">
-            <DataTile label="New Customers" value={formatNumber(metrics.newCustomers, 0)} />
-            <DataTile label="Repeat Customers" value={formatNumber(metrics.repeatCustomers, 0)} />
-            <DataTile label="New Revenue" value={formatCurrency(metrics.newRevenue)} />
-            <DataTile label="Repeat Revenue" value={formatCurrency(metrics.repeatRevenue)} />
-            <DataTile label="New Revenue %" value={`${formatNumber(metrics.newRevenuePct)}%`} />
-            <DataTile label="Repeat Revenue %" value={`${formatNumber(metrics.repeatRevenuePct)}%`} />
-          </div>
-        </Panel>
-      </section>
-
-      <section className="grid grid-cols-2 gap-5">
-        <Panel title="Profitability Snapshot">
-          <div className="space-y-3">
-            <ProfitLine label="Revenue" value={formatCurrency(metrics.revenue)} />
-            <ProfitLine label="Ad Spend" value={`- ${formatCurrency(metrics.spend)}`} />
-            <div className="flex justify-between rounded-2xl bg-slate-950 p-4 text-white">
-              <span className="font-bold text-slate-300">Contribution After Ads</span>
-              <strong>{formatCurrency(metrics.contribution)}</strong>
-            </div>
-          </div>
-        </Panel>
-        <Panel title="CEO Alerts">
-          <AlertBox tone={metrics.contribution < 0 ? 'red' : 'green'} title={metrics.contribution < 0 ? 'Negative after ads' : 'Positive after ads'} text={`Contribution after ads is ${formatCurrency(metrics.contribution)}.`} />
-          <AlertBox tone={metrics.roas < 1 ? 'red' : metrics.roas < 2 ? 'amber' : 'green'} title={metrics.roas < 1 ? 'ROAS below 1.0' : metrics.roas < 2 ? 'ROAS needs monitoring' : 'ROAS healthy'} text={`Current blended ROAS is ${formatNumber(metrics.roas)}.`} />
-          <AlertBox tone={metrics.newCac > metrics.aov ? 'amber' : 'green'} title={metrics.newCac > metrics.aov ? 'CAC above AOV' : 'CAC quality acceptable'} text={`New CAC is ${formatCurrency(metrics.newCac)} vs AOV ${formatCurrency(metrics.aov)}.`} />
-        </Panel>
-      </section>
-    </div>
-  );
-}
-
-function GoogleOS({ activeGoogleTab, setActiveGoogleTab, googleTabs, googleSettings, setGoogleSettings }: any) {
-  return (
-    <section className="rounded-[2rem] border border-white/70 bg-white/95 p-6 shadow-2xl shadow-slate-200/70 backdrop-blur-xl">
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">Google OS</p>
-          <h2 className="mt-1 text-3xl font-black tracking-[-0.05em]">Search & Intent Decision System</h2>
-          <p className="mt-1 max-w-3xl text-slate-500">
-            Settings, channel mix, campaign diagnosis, ad group control, search terms, keywords, funnel and alerts.
-          </p>
-        </div>
-        <div className="rounded-full border bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm">
-          Search Terms First System
-        </div>
-      </div>
-
-      <div className="mb-6 flex max-w-full gap-2 overflow-x-auto rounded-2xl bg-slate-950 p-2 shadow-inner">
-        {googleTabs.map((tab: string) => (
-          <button
-            key={tab}
-            onClick={() => setActiveGoogleTab(tab)}
-            className={
-              activeGoogleTab === tab
-                ? 'whitespace-nowrap rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-950 shadow-sm'
-                : 'whitespace-nowrap rounded-xl px-4 py-2 text-sm font-bold text-slate-400 hover:bg-white/10 hover:text-white'
-            }
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {activeGoogleTab === 'Settings' && (
-        <div className="rounded-3xl border bg-slate-50 p-6 shadow-sm">
-          <GoogleOSSettings settings={googleSettings} setSettings={setGoogleSettings} />
-        </div>
-      )}
-
-      {activeGoogleTab !== 'Settings' && (
-        <div className="space-y-6">
-          <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <DataTile label="Module" value={activeGoogleTab} />
-            <DataTile label="Primary Use" value={activeGoogleTab === 'Search Terms' ? 'Negative / Positive Keyword Decisions' : 'Performance Diagnosis'} />
-            <DataTile label="Status" value="UI Ready" />
-          </section>
-
-          <Panel title={activeGoogleTab + ' Workspace'}>
-            <EmptyState
-              title={activeGoogleTab + ' logic comes next'}
-              text="The Claude-style UI shell is integrated. Now connect this tab to your Google OS API/table logic without touching the design system."
-            />
-          </Panel>
-
-          <PanelDark title="Decision Logic Placeholder">
-            <RiskBox title="Keep" text="Use this area for winners, positives, profitable campaigns or scalable signals." />
-            <RiskBox title="Watch" text="Use this area for low-data terms, volatile campaigns or learning-stage assets." />
-            <RiskBox title="Block / Fix" text="Use this area for waste, negatives, CPA leaks or funnel drop-offs." />
-          </PanelDark>
-        </div>
-      )}
-    </section>
-  );
-}
-
 function MetaOS({ activeMetaTab, setActiveMetaTab, start, end, compareStart, compareEnd }: any) {
   const [params, setParams] = useState<MetaParams>(DEFAULT_PARAMS);
   const [campaigns, setCampaigns] = useState<string[]>([]);
