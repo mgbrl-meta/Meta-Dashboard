@@ -2,10 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import DateControl from './components/DateControl';
-import CeoSummary from './components/CeoSummary';
-import GoogleOS from './components/GoogleOS';
 import MetaOS from './components/MetaOS';
-import ProductOS from './components/ProductOS';
 
 type Row = any;
 type MetaParams = {
@@ -122,8 +119,9 @@ export default function Dashboard() {
     setCompareEnd(formatDate(compareEndDate));
   };
   
-  const [activeTab, setActiveTab] = useState('CEO Summary');
+
   const [activeMetaTab, setActiveMetaTab] = useState('Settings');
+  const [activeTab, setActiveTab] = useState('Meta OS');
   const today = new Date();
 
   const format = (d: Date) => d.toISOString().split("T")[0];
@@ -222,7 +220,7 @@ export default function Dashboard() {
     };
   }, [data, compareData]);
 
-  const tabs = ['CEO Summary', 'Meta OS', 'Google OS', 'Retention OS', 'Product OS'];
+  const tabs = ['Meta OS'];
 
   return (
     <main className="min-h-screen bg-[#090d16] text-slate-100">
@@ -233,8 +231,8 @@ export default function Dashboard() {
               GO
             </div>
             <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-300">GrowthOS</p>
-            <h1 className="mt-2 text-2xl font-black tracking-[-0.06em] text-white">Command Center</h1>
-            <p className="mt-2 text-sm leading-6 text-slate-400">CEO-grade operating system for revenue, media, customers and inventory decisions.</p>
+            <h1 className="mt-2 text-2xl font-black tracking-[-0.06em] text-white">Summery Analysis</h1>
+            <p className="mt-2 text-sm leading-6 text-slate-400">Tech-grade operating system for revenue, media, customers and inventory decisions.</p>
           </div>
 
           <nav className="space-y-2">
@@ -272,7 +270,7 @@ export default function Dashboard() {
               <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.26em] text-cyan-200">{activeTab}</p>
-                  <h2 className="mt-2 text-3xl font-black tracking-[-0.06em] text-white md:text-5xl">GrowthOS Dashboard</h2>
+                  <h2 className="mt-2 text-3xl font-black tracking-[-0.06em] text-white md:text-5xl">MetaOS Dashboard</h2>
                   <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">Revenue, spend, channel efficiency, customer quality and decision alerts in one operating cockpit.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-right sm:grid-cols-4">
@@ -315,7 +313,7 @@ export default function Dashboard() {
             />
 
             <div className="text-slate-950">
-              {activeTab === 'CEO Summary' && <CeoSummary metrics={metrics} data={data} />}
+              
 
               {activeTab === 'Meta OS' && (
                 <MetaOS
@@ -328,25 +326,9 @@ export default function Dashboard() {
                 />
               )}
 
-              {activeTab === 'Google OS' && (
-                <GoogleOS 
-                  startDate={start}
-                  endDate={end}
-                  compareStartDate={compareStart}
-                  compareEndDate={compareEnd}                
-                />
-              )}
+              
 
-              {activeTab === 'Product OS' && (
-                <ProductOS
-                  startDate={start}
-                  endDate={end}
-                  compareStartDate={compareStart}
-                  compareEndDate={compareEnd}
-                />
-              )}
-
-              {activeTab !== 'CEO Summary' && activeTab !== 'Meta OS' && activeTab !== 'Google OS' && activeTab !== 'Product OS' && (
+              { activeTab !== 'Meta OS' && (
                 <section className="rounded-[2rem] border border-white/70 bg-white/90 p-10 shadow-2xl shadow-slate-200/70 backdrop-blur-xl">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">Coming Next</p>
                   <h2 className="mt-2 text-3xl font-black tracking-[-0.04em] text-slate-950">{activeTab}</h2>
