@@ -148,7 +148,7 @@ export default function MetaOS({
         />
       )}
       {activeMetaTab === 'Alerts & Recommendations' && (
-        <MetaAlerts start={start} end={end} compareStart={compareStart} compareEnd={compareEnd} params={params} />
+        <MetaRecomendations start={start} end={end} compareStart={compareStart} compareEnd={compareEnd} params={params} />
       )}
     </section>
   );
@@ -764,6 +764,133 @@ function classifyCreative(c: any, params: MetaParams) {
   if (spend < params.minSpend && (roasIndex >= highIndex || ctrIndex >= highIndex)) return 'TEST';
   if (spend >= params.minSpend && roasIndex <= lowIndex) return 'KILL';
   return 'IGNORE';
+}
+
+function MetaRecomendations({ start, end }: any) {
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/meta-os?tab=Recomendations&start=${start}&end=${end}`);
+        const json = await res.json();
+        setRows(Array.isArray(json) ? json : []);
+      } catch (error) {
+        console.error('Alerts error', error);
+        setRows([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, [start, end]);
+
+  if (loading) return <LoadingCard text="Loading alerts & recommendations..." />;
+
+  const scale = rows.filter((x) => x.alert_type === 'SCALE NOW');
+  const kill = rows.filter((x) => x.alert_type === 'KILL NOW');
+  const refresh = rows.filter((x) => x.alert_type === 'REFRESH NOW');
+  const investigate = rows.filter((x) => x.alert_type === 'INVESTIGATE');
+  const opportunity = rows.filter((x) => x.alert_type === 'OPPORTUNITY');
+  const watch = rows.filter((x) => x.alert_type === 'WATCHLIST');
+
+  const wastedSpend = sum(rows, 'wasted_spend');
+  const totalSpend = sum(rows, 'spend');
+  const wastedPct = safeDivide(wastedSpend, totalSpend) * 100;
+
+  return (
+    <div className="space-y-6">
+      <Panel title="🔥 Wasted Spend Tracker">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <DataTile label="Wasted Spend" value={formatCurrency(wastedSpend)} />
+          <DataTile label="Waste Share" value={`${formatNumber(wastedPct)}%`} />
+          <DataTile label="Zero Purchase Ads" value={formatNumber(kill.filter((x) => Number(x.purchases || 0) === 0).length, 0)} />
+        </div>
+      </Panel>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <AlertBucket title="🟢 Scale Now" items={scale} tone="green" />
+        <AlertBucket title="🔴 Kill Now" items={kill} tone="red" />
+        <AlertBucket title="🟡 Refresh Now" items={refresh} tone="amber" />
+        <AlertBucket title="🟠 Investigate" items={investigate} tone="orange" />
+        <AlertBucket title="🧠 Opportunity Alerts" items={opportunity} tone="blue" />
+        <AlertBucket title="🔵 Watchlist" items={watch} tone="slate" />
+      </div>
+
+      <Panel title="All Alerts — Ad Level">
+        <div className="space-y-3">
+          {rows.slice(0, 50).map((row, i) => (
+            <DecisionRow
+              key={i}
+              title={row.creative_name || row.ad_id || 'Unnamed ad'}
+              status={row.alert_type}
+              subtitle={`${row.campaign_name} · ${row.reason}`}
+            >
+              <MiniStat label="Spend" value={formatCurrency(row.spend)} />
+              <MiniStat label="Revenue" value={formatCurrency(row.revenue)} />
+              <MiniStat label="ROAS" value={formatNumber(row.roas)} />
+              <MiniStat label="CPA" value={formatCurrency(row.cpa)} />
+              <MiniStat label="CTR" value={`${formatNumber(row.ctr)}%`} />
+              <MiniStat label="Freq" value={formatNumber(row.frequency)} />
+            </DecisionRow>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+function AlertBucket({ title, items, tone }: any) {
+  const toneClass =
+    tone === 'green'
+      ? 'border-emerald-200 bg-emerald-50'
+      : tone === 'red'
+        ? 'border-red-200 bg-red-50'
+        : tone === 'amber'
+          ? 'border-amber-200 bg-amber-50'
+          : tone === 'orange'
+            ? 'border-orange-200 bg-orange-50'
+            : tone === 'blue'
+              ? 'border-blue-200 bg-blue-50'
+              : 'border-slate-200 bg-slate-50';
+
+  return (
+    <div className={`rounded-[2rem] border p-5 ${toneClass}`}>
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="font-black">{title}</h3>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-700">
+          {items.length}
+        </span>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-sm font-semibold text-slate-500">No items right now.</p>
+      ) : (
+        <div className="space-y-3">
+          {items.slice(0, 8).map((item: any, i: number) => (
+            <div key={i} className="rounded-2xl border border-white/70 bg-white p-4 shadow-sm">
+              <p className="font-black text-slate-950">{item.creative_name || item.ad_id || 'Unnamed ad'}</p>
+              <p className="mt-1 text-xs font-bold text-slate-500">{item.campaign_name}</p>
+
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-bold text-slate-700">
+                <span>Spend: {formatCurrency(item.spend)}</span>
+                <span>ROAS: {formatNumber(item.roas)}</span>
+                <span>CPA: {formatCurrency(item.cpa)}</span>
+                <span>CTR: {formatNumber(item.ctr)}%</span>
+              </div>
+
+              <p className="mt-3 text-sm font-semibold leading-5 text-slate-700">
+                {item.reason}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function buildBenchmark(rows: any[]) {

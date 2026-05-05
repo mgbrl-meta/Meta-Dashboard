@@ -194,8 +194,8 @@ export async function GET(req: Request) {
       FROM current_period, compare_period
     `;
   }
-if (tab === "creative-daily-4pi") {
-  query = `
+  if (tab === "creative-daily-4pi") {
+    query = `
     WITH daily_campaign AS (
       SELECT
         date,
@@ -241,7 +241,138 @@ if (tab === "creative-daily-4pi") {
       dc.campaign_cpa
     ORDER BY d.creative_name, d.date
   `;
-}
+  }
+
+  if (tab === "Recomendations") {
+    query = `
+    WITH ad_level AS (
+      SELECT
+        campaign_name,
+        adset_name,
+        ad_id,
+        creative_name,
+
+        SUM(spend) AS spend,
+        SUM(revenue) AS revenue,
+        SUM(purchases) AS purchases,
+        SUM(impressions) AS impressions,
+        SUM(reach) AS reach,
+        SUM(clicks) AS clicks,
+        SUM(lpv) AS lpv,
+        SUM(atc) AS atc,
+        SUM(checkout) AS checkout,
+
+        SAFE_DIVIDE(SUM(revenue), SUM(spend)) AS roas,
+        SAFE_DIVIDE(SUM(spend), SUM(purchases)) AS cpa,
+        SAFE_DIVIDE(SUM(clicks), SUM(impressions)) * 100 AS ctr,
+        SAFE_DIVIDE(SUM(spend), SUM(impressions)) * 1000 AS cpm,
+        SAFE_DIVIDE(SUM(impressions), SUM(reach)) AS frequency
+      FROM \`shopify-colab.brillare_shopify.meta_os_daily\`
+      WHERE date BETWEEN @start AND @end
+      GROUP BY campaign_name, adset_name, ad_id, creative_name
+    ),
+
+    campaign_avg AS (
+      SELECT
+        campaign_name,
+        AVG(spend) AS campaign_avg_spend,
+        AVG(roas) AS campaign_avg_roas,
+        AVG(cpa) AS campaign_avg_cpa,
+        AVG(ctr) AS campaign_avg_ctr,
+        AVG(cpm) AS campaign_avg_cpm,
+        AVG(frequency) AS campaign_avg_frequency
+      FROM ad_level
+      GROUP BY campaign_name
+    )
+
+    SELECT
+      a.*,
+      ca.campaign_avg_spend,
+      ca.campaign_avg_roas,
+      ca.campaign_avg_cpa,
+      ca.campaign_avg_ctr,
+      ca.campaign_avg_cpm,
+      ca.campaign_avg_frequency,
+
+      CASE
+        WHEN a.purchases >= 2
+          AND a.roas >= ca.campaign_avg_roas * 1.2
+          AND a.cpa <= ca.campaign_avg_cpa * 0.8
+          THEN 'SCALE NOW'
+
+        WHEN a.spend >= ca.campaign_avg_spend
+          AND a.purchases = 0
+          THEN 'KILL NOW'
+
+        WHEN a.purchases > 0
+          AND a.roas <= ca.campaign_avg_roas * 0.5
+          AND a.cpa >= ca.campaign_avg_cpa * 1.5
+          THEN 'KILL NOW'
+
+        WHEN a.frequency >= ca.campaign_avg_frequency * 1.2
+          AND a.ctr <= ca.campaign_avg_ctr * 0.8
+          THEN 'REFRESH NOW'
+
+        WHEN a.ctr >= ca.campaign_avg_ctr
+          AND a.purchases = 0
+          AND a.spend > 0
+          THEN 'INVESTIGATE'
+
+        WHEN a.roas > ca.campaign_avg_roas
+          AND a.spend < ca.campaign_avg_spend
+          AND a.purchases >= 1
+          THEN 'OPPORTUNITY'
+
+        ELSE 'WATCHLIST'
+      END AS alert_type,
+
+      CASE
+        WHEN a.purchases = 0 THEN a.spend
+        ELSE 0
+      END AS wasted_spend,
+
+      CASE
+        WHEN a.purchases >= 2
+          AND a.roas >= ca.campaign_avg_roas * 1.2
+          THEN 'Outperforming campaign average. Candidate for more budget.'
+
+        WHEN a.purchases = 0
+          AND a.spend >= ca.campaign_avg_spend
+          THEN 'High spend with zero purchases versus campaign average.'
+
+        WHEN a.frequency >= ca.campaign_avg_frequency * 1.2
+          AND a.ctr <= ca.campaign_avg_ctr * 0.8
+          THEN 'Frequency is high and CTR is weak versus campaign average. Creative fatigue likely.'
+
+        WHEN a.ctr >= ca.campaign_avg_ctr
+          AND a.purchases = 0
+          THEN 'Clicks are coming but purchases are missing. Check PDP, offer, or checkout.'
+
+        WHEN a.roas > ca.campaign_avg_roas
+          AND a.spend < ca.campaign_avg_spend
+          THEN 'Underfunded winner. Better than campaign average but receiving less spend.'
+
+        ELSE 'Needs more data before action.'
+      END AS reason
+
+    FROM ad_level a
+    LEFT JOIN campaign_avg ca
+      ON a.campaign_name = ca.campaign_name
+
+    ORDER BY
+      CASE alert_type
+        WHEN 'KILL NOW' THEN 1
+        WHEN 'SCALE NOW' THEN 2
+        WHEN 'REFRESH NOW' THEN 3
+        WHEN 'OPPORTUNITY' THEN 4
+        WHEN 'INVESTIGATE' THEN 5
+        ELSE 6
+      END,
+      spend DESC
+  `;
+  }
+
+
   if (!query) {
     return Response.json({ error: "Invalid Meta OS tab" }, { status: 400 });
   }
@@ -268,14 +399,14 @@ if (tab === "creative-daily-4pi") {
         }))
       );
     }
-if (tab === "creative-daily-4pi") {
-  return Response.json(
-    rows.map((row: any) => ({
-      ...row,
-      date: row.date?.value || row.date,
-    }))
-  );
-}
+    if (tab === "creative-daily-4pi") {
+      return Response.json(
+        rows.map((row: any) => ({
+          ...row,
+          date: row.date?.value || row.date,
+        }))
+      );
+    }
     return Response.json(rows);
   } catch (err: any) {
     return Response.json(
