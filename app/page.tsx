@@ -5,6 +5,7 @@ import DateControl from './components/DateControl';
 import CeoSummary from './components/CeoSummary';
 import GoogleOS from './components/GoogleOS';
 import MetaOS from './components/MetaOS';
+import ProductOS from './components/ProductOS';
 
 type Row = any;
 type MetaParams = {
@@ -327,9 +328,25 @@ export default function Dashboard() {
                 />
               )}
 
-              {activeTab === 'Google OS' && <GoogleOS />}
+              {activeTab === 'Google OS' && (
+                <GoogleOS 
+                  startDate={start}
+                  endDate={end}
+                  compareStartDate={compareStart}
+                  compareEndDate={compareEnd}                
+                />
+              )}
 
-              {activeTab !== 'CEO Summary' && activeTab !== 'Meta OS' && activeTab !== 'Google OS' && (
+              {activeTab === 'Product OS' && (
+                <ProductOS
+                  startDate={start}
+                  endDate={end}
+                  compareStartDate={compareStart}
+                  compareEndDate={compareEnd}
+                />
+              )}
+
+              {activeTab !== 'CEO Summary' && activeTab !== 'Meta OS' && activeTab !== 'Google OS' && activeTab !== 'Product OS' && (
                 <section className="rounded-[2rem] border border-white/70 bg-white/90 p-10 shadow-2xl shadow-slate-200/70 backdrop-blur-xl">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">Coming Next</p>
                   <h2 className="mt-2 text-3xl font-black tracking-[-0.04em] text-slate-950">{activeTab}</h2>

@@ -1,6 +1,6 @@
 'use client';
 
-export type GoogleOSSettingsState = {
+export type GoogleSettingsState = {
   targetRoas: number;
   targetCpa: number;
   minSpend: number;
@@ -11,7 +11,7 @@ export type GoogleOSSettingsState = {
   positiveKeywordConversions: number;
 };
 
-export const defaultSettings: GoogleOSSettingsState = {
+export const defaultSettings: GoogleSettingsState = {
   targetRoas: 2,
   targetCpa: 1000,
   minSpend: 1000,
@@ -22,9 +22,9 @@ export const defaultSettings: GoogleOSSettingsState = {
   positiveKeywordConversions: 2,
 };
 
-export default function GoogleOSSettings({ settings, setSettings }: any) {
-  const update = (key: keyof GoogleOSSettingsState, value: string) => {
-    setSettings((prev: GoogleOSSettingsState) => ({
+export default function GoogleSettings({ settings, setSettings }: any) {
+  const update = (key: keyof GoogleSettingsState, value: string) => {
+    setSettings((prev: GoogleSettingsState) => ({
       ...prev,
       [key]: Number(value || 0),
     }));
@@ -43,7 +43,7 @@ export default function GoogleOSSettings({ settings, setSettings }: any) {
             <input
               type="number"
               value={value as number}
-              onChange={(e) => update(key as keyof GoogleOSSettingsState, e.target.value)}
+              onChange={(e) => update(key as keyof GoogleSettingsState, e.target.value)}
               className="w-full rounded-2xl border bg-slate-50 px-4 py-3 font-black outline-none"
             />
           </label>
